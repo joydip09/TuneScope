@@ -18,6 +18,6 @@ struct SongInfo {
   String title;
   String artist;
   String album;
-
   String songLink;
+  String statusMessage;
 };

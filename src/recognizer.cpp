@@ -1,12 +1,15 @@
 #include "recognizer.h"
 
 #include "config.h"
+#include "recorder.h"
+#include "secrets.h"
+#include "wav.h"
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
+#include <WiFi.h>
 #include <WiFiClientSecure.h>
-#include <esp_crt_bundle.h>
 
 #include <cstdio>
 #include <cstring>
@@ -38,7 +41,24 @@ constexpr int kInvalidRequestStatus = -1;
 constexpr int kMockModeStatus = -2;
 constexpr int kSizeOverflowStatus = -3;
 constexpr int kClientInitializationFailureStatus = -4;
+constexpr int kRequestTimeoutMs = 15000;
+constexpr int kQuotaExceededStatus = 429;
 constexpr size_t kJsonDocumentCapacity = 2048;
+
+constexpr char kStatusWiFiDisconnected[] = "Wi-Fi disconnected.";
+constexpr char kStatusRecorderFailed[] = "Recording failed.";
+constexpr char kStatusWavFailed[] = "WAV generation failed.";
+constexpr char kStatusInvalidToken[] = "Invalid API token.";
+constexpr char kStatusRequestFailed[] = "HTTP request failed.";
+constexpr char kStatusRequestTimedOut[] = "Recognition timed out.";
+constexpr char kStatusQuotaExceeded[] = "API quota exceeded.";
+constexpr char kStatusUnexpectedResponse[] =
+    "Unsupported or unexpected server response.";
+constexpr char kStatusMalformedJson[] = "Invalid or malformed JSON response.";
+constexpr char kStatusNoMatch[] = "No matching song detected.";
+constexpr char kStatusUnknownError[] = "Recognition failed.";
+constexpr char kStatusSuccess[] = "Recognition succeeded.";
+constexpr char kStatusMockMode[] = "Mock recognition enabled.";
 
 class MultipartStream : public Stream {
 public:
@@ -168,30 +188,71 @@ void copyStringField(const JsonObject &object, const char *key,
   }
 }
 
+SongInfo makeFailureResult(const char *statusMessage) {
+  SongInfo result{};
+  result.statusMessage =
+      statusMessage != nullptr ? statusMessage : kStatusUnknownError;
+  return result;
+}
+
 } // namespace
 
-bool Recognizer::begin() { return true; }
+bool Recognizer::begin() {
+  if (m_initialized) {
+    return true;
+  }
 
-SongInfo Recognizer::parseSongInfoResponse(const String &responseBody) {
+  if (!m_recorder.begin()) {
+    return false;
+  }
+
+  m_initialized = true;
+  return true;
+}
+
+bool Recognizer::recordAudio() {
+  if (!m_initialized) {
+    return false;
+  }
+
+  return m_recorder.startRecording();
+}
+
+bool Recognizer::generateWav() {
+  if (!m_initialized) {
+    return false;
+  }
+
+  return m_wav.build(m_recorder.pcmData(), m_recorder.sampleCount(),
+                     Config::RECORD_SAMPLE_RATE, Config::RECORD_CHANNELS,
+                     Config::RECORD_BITS_PER_SAMPLE);
+}
+
+SongInfo Recognizer::parseSongInfoResponse(const String &responseBody,
+                                           String &statusMessage) {
   SongInfo result{};
 
   if (responseBody.isEmpty()) {
+    statusMessage = kStatusMalformedJson;
     return result;
   }
 
   JsonDocument document;
   const DeserializationError error = deserializeJson(document, responseBody);
   if (error) {
+    statusMessage = kStatusMalformedJson;
     return result;
   }
 
   const char *status = document["status"];
   if (status == nullptr || std::strcmp(status, "success") != 0) {
+    statusMessage = kStatusNoMatch;
     return result;
   }
 
   const JsonVariant resultVariant = document["result"];
   if (!resultVariant.is<JsonObject>()) {
+    statusMessage = kStatusNoMatch;
     return result;
   }
 
@@ -214,25 +275,59 @@ SongInfo Recognizer::parseSongInfoResponse(const String &responseBody) {
 
   result.found = !result.title.isEmpty() || !result.artist.isEmpty() ||
                  !result.album.isEmpty() || !result.songLink.isEmpty();
+  if (result.found) {
+    statusMessage = kStatusSuccess;
+  } else {
+    statusMessage = kStatusNoMatch;
+  }
   return result;
 }
 
-SongInfo Recognizer::recognize(const uint8_t *wavData, size_t wavSizeBytes) {
-  SongInfo result{};
+SongInfo Recognizer::recognize() {
+  if (!begin()) {
+    return makeFailureResult(kStatusRecorderFailed);
+  }
 
-  if (!hasWavData(wavData, wavSizeBytes)) {
-    return result;
+  if (WiFi.status() != WL_CONNECTED) {
+    return makeFailureResult(kStatusWiFiDisconnected);
+  }
+
+  if (!recordAudio()) {
+    return makeFailureResult(kStatusRecorderFailed);
+  }
+
+  if (!generateWav()) {
+    return makeFailureResult(kStatusWavFailed);
   }
 
   if (Config::ENABLE_MOCK_RECOGNITION) {
+    SongInfo result{};
     result.found = true;
     result.title = kMockTitle;
     result.artist = kMockArtist;
     result.album = kMockAlbum;
     result.songLink = kMockSongLink;
+    result.statusMessage = kStatusMockMode;
+    return result;
   }
 
-  return result;
+  HttpsUploadRequest request;
+  request.endpoint = "https://api.audd.io/";
+  request.apiToken = AUDD_API_TOKEN;
+
+  const HttpsUploadResult uploadResult =
+      uploadWav(m_wav.data(), m_wav.sizeBytes(), request);
+  if (!uploadResult.success) {
+    return makeFailureResult(uploadResult.errorMessage.isEmpty()
+                                 ? kStatusUnknownError
+                                 : uploadResult.errorMessage.c_str());
+  }
+
+  SongInfo resultFromUpload = uploadResult.songInfo;
+  if (resultFromUpload.statusMessage.isEmpty()) {
+    resultFromUpload.statusMessage = kStatusUnknownError;
+  }
+  return resultFromUpload;
 }
 
 HttpsUploadResult Recognizer::uploadWav(const uint8_t *wavData,
@@ -242,13 +337,25 @@ HttpsUploadResult Recognizer::uploadWav(const uint8_t *wavData,
 
   if (!hasWavData(wavData, wavSizeBytes) || !hasValidRequest(request)) {
     result.httpStatusCode = kInvalidRequestStatus;
-    result.errorMessage = "Invalid WAV data or HTTPS request parameters.";
+    result.errorMessage = kStatusUnknownError;
     return result;
   }
 
   if (Config::ENABLE_MOCK_RECOGNITION) {
     result.httpStatusCode = kMockModeStatus;
-    result.errorMessage = "Mock recognition is enabled.";
+    result.errorMessage = kStatusMockMode;
+    return result;
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    result.httpStatusCode = kInvalidRequestStatus;
+    result.errorMessage = kStatusWiFiDisconnected;
+    return result;
+  }
+
+  if (request.apiToken == nullptr || request.apiToken[0] == '\0') {
+    result.httpStatusCode = kInvalidRequestStatus;
+    result.errorMessage = kStatusInvalidToken;
     return result;
   }
 
@@ -260,7 +367,7 @@ HttpsUploadResult Recognizer::uploadWav(const uint8_t *wavData,
       !buildMultipartContentType(contentType, sizeof(contentType),
                                  kMultipartBoundary)) {
     result.httpStatusCode = kInvalidRequestStatus;
-    result.errorMessage = "Unable to build the multipart request headers.";
+    result.errorMessage = kStatusUnknownError;
     return result;
   }
 
@@ -269,7 +376,7 @@ HttpsUploadResult Recognizer::uploadWav(const uint8_t *wavData,
       wavSizeBytes + prefixSize >
           std::numeric_limits<size_t>::max() - suffixSize) {
     result.httpStatusCode = kSizeOverflowStatus;
-    result.errorMessage = "Multipart request exceeds the supported size.";
+    result.errorMessage = kStatusUnknownError;
     return result;
   }
 
@@ -283,12 +390,13 @@ HttpsUploadResult Recognizer::uploadWav(const uint8_t *wavData,
   HTTPClient http;
   if (!http.begin(secureClient, request.endpoint)) {
     result.httpStatusCode = kClientInitializationFailureStatus;
-    result.errorMessage = "Failed to initialize the HTTPS client.";
+    result.errorMessage = kStatusRequestFailed;
     http.end();
     secureClient.stop();
     return result;
   }
 
+  http.setTimeout(kRequestTimeoutMs);
   http.addHeader("Content-Type", contentType);
   const int responseCode =
       http.sendRequest("POST", &requestBody, contentLength);
@@ -296,21 +404,37 @@ HttpsUploadResult Recognizer::uploadWav(const uint8_t *wavData,
 
   if (responseCode < 0) {
     result.success = false;
-    result.errorMessage = http.errorToString(responseCode);
+    result.errorMessage = responseCode == HTTPC_ERROR_READ_TIMEOUT
+                              ? kStatusRequestTimedOut
+                              : kStatusRequestFailed;
+  } else if (responseCode == kQuotaExceededStatus) {
+    result.success = false;
+    result.errorMessage = kStatusQuotaExceeded;
+  } else if (responseCode == HTTP_CODE_UNAUTHORIZED ||
+             responseCode == HTTP_CODE_FORBIDDEN) {
+    result.success = false;
+    result.errorMessage = kStatusInvalidToken;
+  } else if (responseCode == HTTP_CODE_REQUEST_TIMEOUT) {
+    result.success = false;
+    result.errorMessage = kStatusRequestTimedOut;
+  } else if (responseCode >= HTTP_CODE_OK &&
+             responseCode < HTTP_CODE_MULTIPLE_CHOICES) {
+    result.success = true;
   } else {
-    result.success = responseCode >= HTTP_CODE_OK &&
-                     responseCode < HTTP_CODE_MULTIPLE_CHOICES;
-    if (!result.success) {
-      result.errorMessage = "HTTPS upload returned a non-2xx response.";
-    }
+    result.success = false;
+    result.errorMessage = kStatusUnexpectedResponse;
   }
 
   if (responseCode >= 0) {
     result.responseBody = http.getString();
     if (result.success) {
-      result.songInfo = parseSongInfoResponse(result.responseBody);
+      String statusMessage;
+      result.songInfo =
+          parseSongInfoResponse(result.responseBody, statusMessage);
+      result.songInfo.statusMessage = statusMessage;
     } else {
       result.songInfo = SongInfo{};
+      result.songInfo.statusMessage = result.errorMessage;
     }
   }
 

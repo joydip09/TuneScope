@@ -3,7 +3,9 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "recorder.h"
 #include "types.h"
+#include "wav.h"
 
 /** HTTPS configuration for a single multipart WAV upload. */
 struct HttpsUploadRequest {
@@ -27,35 +29,21 @@ public:
   bool begin();
 
   /**
-   * Parses an AudD-style JSON response body into a reusable SongInfo object.
-   *
-   * @param responseBody Raw JSON response body returned by the HTTPS upload.
-   * @return Parsed recognition metadata, or a result with found set to false.
+   * Performs the complete recognition workflow: record audio, generate WAV,
+   * upload it, parse the response, and return SongInfo.
    */
-  SongInfo parseSongInfoResponse(const String &responseBody);
+  SongInfo recognize();
 
-  /**
-   * Recognizes a complete, read-only WAV buffer.
-   *
-   * @param wavData Pointer to the first byte of the WAV file.
-   * @param wavSizeBytes Number of bytes available at wavData.
-   * @return Recognition metadata, or a result with found set to false.
-   */
-  SongInfo recognize(const uint8_t *wavData, size_t wavSizeBytes);
-
-  /**
-   * Sends a read-only WAV buffer in a multipart/form-data HTTPS request.
-   *
-   * The request includes api_token and file fields. A successful result is a
-   * 2xx HTTP response only; the response body is intentionally not processed.
-   * No transaction is attempted while mock recognition is enabled.
-   *
-   * @param wavData Pointer to the first byte of the complete WAV file.
-   * @param wavSizeBytes Number of bytes available at wavData.
-   * @param request HTTPS endpoint, token, and optional server root CA. When no
-   * root CA is supplied, the ESP32 certificate bundle is used.
-   * @return HTTP transaction status without interpreting the response body.
-   */
+private:
+  bool recordAudio();
+  bool generateWav();
+  SongInfo parseSongInfoResponse(const String &responseBody,
+                                 String &statusMessage);
   HttpsUploadResult uploadWav(const uint8_t *wavData, size_t wavSizeBytes,
                               const HttpsUploadRequest &request);
+
+private:
+  Recorder m_recorder;
+  WavGenerator m_wav;
+  bool m_initialized = false;
 };
