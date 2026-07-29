@@ -27,7 +27,7 @@ constexpr uint32_t HTTP_TIMEOUT_MS = 15000;
 
 // Wi-Fi
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 15000;
-constexpr uint8_t WIFI_MAX_RETRIES = 3;
+constexpr uint32_t WIFI_RETRY_INTERVAL_MS = 5000;
 
 // Display
 constexpr uint16_t DISPLAY_REFRESH_MS = 33;

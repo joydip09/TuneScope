@@ -1,25 +1,27 @@
 #include <Arduino.h>
 
-#include "button.h"
+#include "wifi_manager.h"
 
 void setup() {
   Serial.begin(115200);
 
-  while (!Serial) {
-    delay(10);
-  }
-
-  Button::begin();
-
-  Serial.println("Button test started.");
+  WiFiManager::begin();
 }
 
 void loop() {
-  Button::update();
+  WiFiManager::update();
 
-  if (Button::wasPressed()) {
-    Serial.println("Pressed!");
+  switch (WiFiManager::state()) {
+
+  case WiFiState::CONNECTING:
+    break;
+
+  case WiFiState::CONNECTED:
+    break;
+
+  case WiFiState::DISCONNECTED:
+    break;
   }
 
-  delay(5);
+  delay(10);
 }
