@@ -1,33 +1,25 @@
 #include <Arduino.h>
 
-#include "audio.h"
-#include "config.h"
+#include "button.h"
 
 void setup() {
-  if (Config::DEBUG_SERIAL) {
-    Serial.begin(115200);
+  Serial.begin(115200);
 
-    while (!Serial) {
-      delay(10);
-    }
-
-    Serial.println();
-    Serial.println("=== TuneScope Audio Test ===");
+  while (!Serial) {
+    delay(10);
   }
 
-  if (!Audio::begin()) {
-    Serial.println("Audio initialization failed.");
+  Button::begin();
 
-    while (true) {
-      delay(1000);
-    }
-  }
-
-  Serial.println("Audio initialized.");
+  Serial.println("Button test started.");
 }
 
 void loop() {
-  Audio::update();
+  Button::update();
 
-  delay(50);
+  if (Button::wasPressed()) {
+    Serial.println("Pressed!");
+  }
+
+  delay(5);
 }
