@@ -26,3 +26,6 @@ compile_commands.json
 *.swo
 
 __pycache__/
+
+AGENTS.md
+README.md

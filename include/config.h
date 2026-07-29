@@ -22,8 +22,13 @@ constexpr uint32_t AUDIO_BUFFER_SIZE =
     SAMPLE_RATE * RECORD_DURATION_SEC * (BITS_PER_SAMPLE / 8) * CHANNELS;
 
 // Recognition
-constexpr uint32_t RECOGNITION_INTERVAL_MS = 180000;
-constexpr uint32_t HTTP_TIMEOUT_MS = 15000;
+constexpr uint32_t RECORD_DURATION_MS = 5000;
+constexpr uint32_t RECORD_SAMPLE_RATE = 16000;
+constexpr uint16_t RECORD_CHANNELS = 1;
+constexpr uint16_t RECORD_BITS_PER_SAMPLE = 16;
+
+constexpr bool ENABLE_MOCK_RECOGNITION = false;
+constexpr char kRecordingPath[] = "/recording.wav";
 
 // Wi-Fi
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 15000;

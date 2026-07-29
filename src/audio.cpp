@@ -90,3 +90,21 @@ void Audio::update() {
 }
 
 uint16_t Audio::getRMS() { return rms; }
+
+bool Audio::readSamples(int16_t *samples, size_t requestedSamples,
+                        size_t &samplesRead, uint32_t timeoutMs) {
+  samplesRead = 0;
+
+  if (samples == nullptr || requestedSamples == 0) {
+    return false;
+  }
+
+  size_t bytesRead = 0;
+  const TickType_t timeoutTicks = pdMS_TO_TICKS(timeoutMs);
+  const esp_err_t result =
+      i2s_read(I2S_PORT, samples, requestedSamples * sizeof(int16_t),
+               &bytesRead, timeoutTicks);
+
+  samplesRead = bytesRead / sizeof(int16_t);
+  return result == ESP_OK;
+}
