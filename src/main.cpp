@@ -1,20 +1,68 @@
 #include <Arduino.h>
 #include <LittleFS.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include "audio.h"
 #include "button.h"
 #include "config.h"
+#include "display_manager.h"
+#include "pins.h"
 #include "recognizer.h"
 #include "recorder.h"
 #include "wifi_manager.h"
 
 namespace {
 
+bool lastModeButtonPressedState = false;
+bool debouncedModeButtonPressedState = false;
+unsigned long lastModeButtonChangeMs = 0;
+
 Recorder recorder;
 Recognizer recognizer;
 bool recorderReady = false;
 bool recognizerReady = false;
 bool fileSystemReady = false;
+DisplayManager displayManager;
+TaskHandle_t recognitionTaskHandle = nullptr;
+
+struct RecognitionTaskContext {
+  Recognizer *recognizer;
+};
+
+void recognitionTaskEntry(void *parameter) {
+  auto *context = static_cast<RecognitionTaskContext *>(parameter);
+  if (context != nullptr && context->recognizer != nullptr) {
+    context->recognizer->recognize();
+  }
+
+  recognitionTaskHandle = nullptr;
+  vTaskDelete(nullptr);
+}
+
+void updateDisplayModeButton() {
+  const bool rawButtonPressed = (digitalRead(MODE_BUTTON_PIN) == LOW);
+  const unsigned long now = millis();
+
+  if (rawButtonPressed != lastModeButtonPressedState) {
+    lastModeButtonChangeMs = now;
+    lastModeButtonPressedState = rawButtonPressed;
+  }
+
+  if ((now - lastModeButtonChangeMs) < Config::DEBOUNCE_TIME_MS) {
+    return;
+  }
+
+  if (rawButtonPressed == debouncedModeButtonPressedState) {
+    return;
+  }
+
+  debouncedModeButtonPressedState = rawButtonPressed;
+
+  if (rawButtonPressed) {
+    displayManager.nextDisplayMode();
+  }
+}
 
 void printSongInfo(const SongInfo &songInfo) {
   if (!songInfo.found) {
@@ -32,13 +80,18 @@ void printSongInfo(const SongInfo &songInfo) {
   }
 }
 
-void runRecognitionCycle() {
-  Serial.println(F("[Main] Recognizing..."));
+void startRecognitionCycle() {
+  if (recognitionTaskHandle != nullptr) {
+    return;
+  }
 
-  const SongInfo songInfo = recognizer.recognize();
-  printSongInfo(songInfo);
-  Serial.println(
-      F("[Main] Recognition cycle complete. Press the button again."));
+  Serial.println(F("[Main] Recognizing..."));
+  displayManager.setDisplayMode(DisplayMode::SongDetails);
+  displayManager.setRecognitionState(RecognitionState::Recording);
+
+  RecognitionTaskContext context{&recognizer};
+  xTaskCreate(recognitionTaskEntry, "recognition_task", 8192, &context, 1,
+              &recognitionTaskHandle);
 }
 
 } // namespace
@@ -69,7 +122,10 @@ void setup() {
   Serial.println(F("[Main] Initializing Wi-Fi..."));
   WiFiManager::begin();
 
+  pinMode(MODE_BUTTON_PIN, INPUT_PULLUP);
   Button::begin();
+  recognizer.setObserver(&displayManager);
+  displayManager.setRecognitionState(RecognitionState::Idle);
 
   fileSystemReady = LittleFS.begin(true);
   if (fileSystemReady) {
@@ -81,6 +137,8 @@ void setup() {
 
 void loop() {
   Button::update();
+  updateDisplayModeButton();
+  displayManager.update();
   WiFiManager::update();
 
   const bool buttonPressed = Button::wasPressed();
@@ -88,7 +146,7 @@ void loop() {
     Serial.println(F("[Main] Wi-Fi is not connected; waiting for network."));
   } else if (buttonPressed && recorderReady && recognizerReady) {
     Serial.println(F("[Main] Button pressed."));
-    runRecognitionCycle();
+    startRecognitionCycle();
   }
 
   delay(10);

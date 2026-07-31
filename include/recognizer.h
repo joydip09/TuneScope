@@ -7,6 +7,13 @@
 #include "types.h"
 #include "wav.h"
 
+class RecognizerObserver {
+public:
+  virtual ~RecognizerObserver() = default;
+  virtual void onRecognitionStateChanged(RecognitionState state) = 0;
+  virtual void onSongInfoUpdated(const SongInfo &songInfo) = 0;
+};
+
 /** HTTPS configuration for a single multipart WAV upload. */
 struct HttpsUploadRequest {
   const char *endpoint = nullptr;
@@ -28,6 +35,8 @@ public:
   /** Initializes the recognition backend. */
   bool begin();
 
+  void setObserver(RecognizerObserver *observer);
+
   /**
    * Performs the complete recognition workflow: record audio, generate WAV,
    * upload it, parse the response, and return SongInfo.
@@ -43,7 +52,12 @@ private:
                               const HttpsUploadRequest &request);
 
 private:
+  void notifyState(RecognitionState state);
+  void notifySongInfo(const SongInfo &songInfo);
+
+private:
   Recorder m_recorder;
   WavGenerator m_wav;
   bool m_initialized = false;
+  RecognizerObserver *m_observer = nullptr;
 };

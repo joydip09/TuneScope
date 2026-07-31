@@ -7,9 +7,12 @@ enum class RecognitionState {
   Recording,
   Uploading,
   Recognizing,
-  Success,
-  NotFound,
-  Error
+  SongFound,
+  SongNotFound,
+  WiFiError,
+  UploadFailed,
+  ApiError,
+  Failed
 };
 
 struct SongInfo {

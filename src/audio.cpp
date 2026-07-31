@@ -82,11 +82,6 @@ void Audio::update() {
 
   rms = static_cast<uint16_t>(
       sqrt(static_cast<float>(sum) / static_cast<float>(count)));
-
-  if (Config::DEBUG_SERIAL) {
-    Serial.print("RMS: ");
-    Serial.println(rms);
-  }
 }
 
 uint16_t Audio::getRMS() { return rms; }

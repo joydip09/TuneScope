@@ -8,3 +8,4 @@
 #define MIC_SD_PIN 6
 
 #define BUTTON_PIN 7
+#define MODE_BUTTON_PIN 10

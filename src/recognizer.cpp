@@ -10,6 +10,7 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <esp_heap_caps.h>
 
 #include <cstdio>
 #include <cstring>
@@ -197,6 +198,22 @@ SongInfo makeFailureResult(const char *statusMessage) {
 
 } // namespace
 
+void Recognizer::setObserver(RecognizerObserver *observer) {
+  m_observer = observer;
+}
+
+void Recognizer::notifyState(RecognitionState state) {
+  if (m_observer != nullptr) {
+    m_observer->onRecognitionStateChanged(state);
+  }
+}
+
+void Recognizer::notifySongInfo(const SongInfo &songInfo) {
+  if (m_observer != nullptr) {
+    m_observer->onSongInfoUpdated(songInfo);
+  }
+}
+
 bool Recognizer::begin() {
   if (m_initialized) {
     return true;
@@ -285,20 +302,35 @@ SongInfo Recognizer::parseSongInfoResponse(const String &responseBody,
 
 SongInfo Recognizer::recognize() {
   if (!begin()) {
-    return makeFailureResult(kStatusRecorderFailed);
+    notifyState(RecognitionState::Failed);
+    SongInfo failure = makeFailureResult(kStatusRecorderFailed);
+    notifySongInfo(failure);
+    return failure;
   }
 
   if (WiFi.status() != WL_CONNECTED) {
-    return makeFailureResult(kStatusWiFiDisconnected);
+    notifyState(RecognitionState::WiFiError);
+    SongInfo failure = makeFailureResult(kStatusWiFiDisconnected);
+    notifySongInfo(failure);
+    return failure;
   }
 
+  notifyState(RecognitionState::Recording);
   if (!recordAudio()) {
-    return makeFailureResult(kStatusRecorderFailed);
+    notifyState(RecognitionState::Failed);
+    SongInfo failure = makeFailureResult(kStatusRecorderFailed);
+    notifySongInfo(failure);
+    return failure;
   }
 
   if (!generateWav()) {
-    return makeFailureResult(kStatusWavFailed);
+    notifyState(RecognitionState::Failed);
+    SongInfo failure = makeFailureResult(kStatusWavFailed);
+    notifySongInfo(failure);
+    return failure;
   }
+
+  notifyState(RecognitionState::Uploading);
 
   if (Config::ENABLE_MOCK_RECOGNITION) {
     SongInfo result{};
@@ -308,6 +340,8 @@ SongInfo Recognizer::recognize() {
     result.album = kMockAlbum;
     result.songLink = kMockSongLink;
     result.statusMessage = kStatusMockMode;
+    notifyState(RecognitionState::SongFound);
+    notifySongInfo(result);
     return result;
   }
 
@@ -318,15 +352,36 @@ SongInfo Recognizer::recognize() {
   const HttpsUploadResult uploadResult =
       uploadWav(m_wav.data(), m_wav.sizeBytes(), request);
   if (!uploadResult.success) {
-    return makeFailureResult(uploadResult.errorMessage.isEmpty()
-                                 ? kStatusUnknownError
-                                 : uploadResult.errorMessage.c_str());
+    if (uploadResult.errorMessage == kStatusWiFiDisconnected) {
+      notifyState(RecognitionState::WiFiError);
+    } else if (uploadResult.errorMessage == kStatusQuotaExceeded ||
+               uploadResult.errorMessage == kStatusRequestTimedOut ||
+               uploadResult.errorMessage == kStatusRequestFailed) {
+      notifyState(RecognitionState::UploadFailed);
+    } else {
+      notifyState(RecognitionState::ApiError);
+    }
+
+    SongInfo failure =
+        makeFailureResult(uploadResult.errorMessage.isEmpty()
+                              ? kStatusUnknownError
+                              : uploadResult.errorMessage.c_str());
+    notifySongInfo(failure);
+    return failure;
   }
 
+  notifyState(RecognitionState::Recognizing);
   SongInfo resultFromUpload = uploadResult.songInfo;
   if (resultFromUpload.statusMessage.isEmpty()) {
     resultFromUpload.statusMessage = kStatusUnknownError;
   }
+
+  if (resultFromUpload.found) {
+    notifyState(RecognitionState::SongFound);
+  } else {
+    notifyState(RecognitionState::SongNotFound);
+  }
+  notifySongInfo(resultFromUpload);
   return resultFromUpload;
 }
 
@@ -398,6 +453,12 @@ HttpsUploadResult Recognizer::uploadWav(const uint8_t *wavData,
 
   http.setTimeout(kRequestTimeoutMs);
   http.addHeader("Content-Type", contentType);
+
+  Serial.printf("Heap: %u\n", ESP.getFreeHeap());
+  Serial.printf("Largest block: %u\n",
+                heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+  Serial.printf("PSRAM: %u\n", ESP.getFreePsram());
+
   const int responseCode =
       http.sendRequest("POST", &requestBody, contentLength);
   result.httpStatusCode = responseCode;
