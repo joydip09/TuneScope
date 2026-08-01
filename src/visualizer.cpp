@@ -40,9 +40,23 @@ void Visualizer::drawBaselineDots(Adafruit_SSD1306 &display) {
 
 void Visualizer::drawWaveform(Adafruit_SSD1306 &display, float amplitude) {
   const int16_t totalBars = kBarsPerSide * 2;
-  const int16_t contentWidth =
-      totalBars * kBarWidth + (totalBars - 1) * kBarGap;
-  const int16_t startX = kCenterX - contentWidth / 2;
+
+  // Compute dynamic gap so bars span nearly the full display width with a
+  // small outer margin. Keep integer math and ensure gap >= 1.
+  const int16_t margin = 1;
+  const int32_t available = kDisplayWidth - 2 * margin;
+  int16_t gap = 1;
+  if (totalBars > 1) {
+    const int32_t numerator = available - (totalBars * kBarWidth);
+    gap = static_cast<int16_t>(numerator / (totalBars - 1));
+    if (gap < 1) {
+      gap = 1;
+    }
+  }
+
+  const int32_t totalWidthUsed = totalBars * kBarWidth + (totalBars - 1) * gap;
+  const int16_t startX =
+      static_cast<int16_t>((kDisplayWidth - totalWidthUsed) / 2);
 
   for (int16_t side = 0; side < 2; ++side) {
     for (int16_t index = 0; index < kBarsPerSide; ++index) {
@@ -50,8 +64,8 @@ void Visualizer::drawWaveform(Adafruit_SSD1306 &display, float amplitude) {
           kBarMinHeight +
           static_cast<int16_t>(amplitude * (kBarMaxHeight - kBarMinHeight) *
                                kProfileMultiplier[index]);
-      const int16_t x = startX + (side == 0 ? index : (totalBars - 1 - index)) *
-                                     (kBarWidth + kBarGap);
+      const int16_t barIndex = (side == 0) ? index : (totalBars - 1 - index);
+      const int16_t x = startX + barIndex * (kBarWidth + gap);
       const int16_t y = kCenterY - (relativeHeight / 2);
 
       display.fillRoundRect(x, y, kBarWidth, relativeHeight, 1, SSD1306_WHITE);

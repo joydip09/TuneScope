@@ -308,6 +308,10 @@ void Display::showVisualizer(uint16_t rms) {
   if (!displayReady && !Display::begin()) {
     return;
   }
+  // Invalidate any cached song details rendering so stale pixels do not
+  // persist when switching to the visualizer.
+  hasRenderedSongDetails = false;
+  lastRenderedTitle = String();
 
   const float normalizedAmplitude = normalizeAmplitude(rms);
 

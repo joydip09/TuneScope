@@ -115,6 +115,12 @@ void DisplayManager::update() {
 
   if (displayMode_ == DisplayMode::Visualizer &&
       (now - lastVisualizerUpdateMs_) >= Config::DISPLAY_REFRESH_MS) {
+    // Update audio samples for visualizer only when idle (do not interfere
+    // with recording/recognition which consume audio buffers).
+    if (recognitionState_ == RecognitionState::Idle) {
+      Audio::update();
+    }
+
     lastVisualizerUpdateMs_ = now;
     needsRender_ = true;
   }
@@ -153,8 +159,6 @@ void DisplayManager::renderVisualizer() {
     renderSongDetails();
     return;
   }
-
-  Audio::update();
   Display::showVisualizer(Audio::getRMS());
 }
 
