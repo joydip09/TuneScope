@@ -173,9 +173,7 @@ This modular design allows new functionality to be added with minimal impact on 
 
 ## Splash Screen
 
-```
-[ GIF Placeholder ]
-```
+![Splash Screen](docs/images/splash.jpeg)
 
 ---
 
@@ -555,7 +553,7 @@ The following media will be added before the public release.
 
 ## Complete Assembly
 
-![TuneScope Assembly](docs/images/complete_assembly.jpeg)
+![Complete Assembly](docs/images/complete_assembly.jpeg)
 
 ---
 
