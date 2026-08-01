@@ -232,7 +232,7 @@ bool Display::showSongDetails(RecognitionState state, const SongInfo &songInfo,
           static_cast<int16_t>(measureTextWidth(titleText, 2));
       const bool shouldScroll = titleWidth > kRowWidth;
 
-      int16_t windowChars = 1;
+      int16_t windowChars = 0;
       if (shouldScroll) {
         String window;
         for (int16_t i = 0; i < static_cast<int16_t>(titleText.length()); ++i) {
