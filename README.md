@@ -8,16 +8,8 @@
 ![IDE](https://img.shields.io/badge/IDE-PlatformIO-blueviolet)
 ![Language](https://img.shields.io/badge/language-C++17-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
-
-![Release](https://img.shields.io/github/v/release/joydip09/TuneScope)
-![License](https://img.shields.io/github/license/joydip09/TuneScope)
-![Stars](https://img.shields.io/github/stars/joydip09/TuneScope)
-![Forks](https://img.shields.io/github/forks/joydip09/TuneScope)
 ![Issues](https://img.shields.io/github/issues/joydip09/TuneScope)
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange)
-![ESP32-S3](https://img.shields.io/badge/ESP32--S3-N16R8-blue)
-![Arduino](https://img.shields.io/badge/Framework-Arduino-success)
-![CI](https://github.com/joydip09/TuneScope/actions/workflows/build.yml/badge.svg)
 
 ---
 
