@@ -165,9 +165,7 @@ This modular design allows new functionality to be added with minimal impact on 
 
 ## Device
 
-```
-[ Photo Placeholder ]
-```
+![Device](docs/images/complete_assembly.jpeg)
 
 ---
 
