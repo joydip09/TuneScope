@@ -305,6 +305,7 @@ SongInfo Recognizer::recognize() {
     notifyState(RecognitionState::Failed);
     SongInfo failure = makeFailureResult(kStatusRecorderFailed);
     notifySongInfo(failure);
+    notifyState(RecognitionState::Idle);
     return failure;
   }
 
@@ -312,6 +313,7 @@ SongInfo Recognizer::recognize() {
     notifyState(RecognitionState::WiFiError);
     SongInfo failure = makeFailureResult(kStatusWiFiDisconnected);
     notifySongInfo(failure);
+    notifyState(RecognitionState::Idle);
     return failure;
   }
 
@@ -320,6 +322,7 @@ SongInfo Recognizer::recognize() {
     notifyState(RecognitionState::Failed);
     SongInfo failure = makeFailureResult(kStatusRecorderFailed);
     notifySongInfo(failure);
+    notifyState(RecognitionState::Idle);
     return failure;
   }
 
@@ -327,6 +330,7 @@ SongInfo Recognizer::recognize() {
     notifyState(RecognitionState::Failed);
     SongInfo failure = makeFailureResult(kStatusWavFailed);
     notifySongInfo(failure);
+    notifyState(RecognitionState::Idle);
     return failure;
   }
 
@@ -342,6 +346,7 @@ SongInfo Recognizer::recognize() {
     result.statusMessage = kStatusMockMode;
     notifyState(RecognitionState::SongFound);
     notifySongInfo(result);
+    notifyState(RecognitionState::Idle);
     return result;
   }
 
@@ -367,6 +372,7 @@ SongInfo Recognizer::recognize() {
                               ? kStatusUnknownError
                               : uploadResult.errorMessage.c_str());
     notifySongInfo(failure);
+    notifyState(RecognitionState::Idle);
     return failure;
   }
 
@@ -382,6 +388,7 @@ SongInfo Recognizer::recognize() {
     notifyState(RecognitionState::SongNotFound);
   }
   notifySongInfo(resultFromUpload);
+  notifyState(RecognitionState::Idle);
   return resultFromUpload;
 }
 

@@ -138,9 +138,7 @@ void setup() {
 void loop() {
   Button::update();
   updateDisplayModeButton();
-  displayManager.update();
   WiFiManager::update();
-
   const bool buttonPressed = Button::wasPressed();
   if (buttonPressed && !WiFiManager::isConnected()) {
     Serial.println(F("[Main] Wi-Fi is not connected; waiting for network."));
@@ -148,6 +146,10 @@ void loop() {
     Serial.println(F("[Main] Button pressed."));
     startRecognitionCycle();
   }
+
+  // Update display after handling input to avoid blocking audio reads
+  // (Audio::update() can block inside DisplayManager::update()).
+  displayManager.update();
 
   delay(10);
 }

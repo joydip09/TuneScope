@@ -1,135 +1,110 @@
+# CURRENT TASK
+
+## Project
+
+TuneScope V1
+
+---
+
+# Current Phase
+
+## Phase 5 – OLED User Interface
+
+The OLED UI is functionally complete.
+
+Implemented screens:
+
+- Splash Screen
+- Song Details Screen
+- Recording Screen
+- Idle / No Song Screen
+- Audio Visualizer Screen
+
+Display mode switching is implemented and working.
+
+---
+
+# Recently Completed
+
+- Implemented mirrored audio visualizer.
+- Fixed recording state integration.
+- Fixed Visualizer blocking the recording process.
+- Fixed RecognitionState transition so the Visualizer resumes after recording.
+- Fixed stale pixels remaining after switching display modes.
+- Fixed Visualizer refresh after recognition.
+- Verified multiple recognition cycles.
+- Verified display state switching.
+- Verified song title scrolling.
+
+---
+
 # Current Task
 
-## Current Goal
+Investigate a minor scrolling issue.
 
-Fix the Song Details screen.
+## Problem
 
----
+Long song titles occasionally do not display their final character before reversing scroll direction.
 
-## Current Problem
+Example:
 
-Long song titles become corrupted while scrolling.
+Expected:
 
-Observed symptoms:
+Harleys in Hawaii
 
-- title overlaps artist
-- wrapped text
-- duplicated text
-- ghost pixels
-- rendering artifacts
+Observed:
 
----
+Harleys in Hawa
 
-## Files Reviewed
+The last character is occasionally clipped before the scroll reverses.
 
-display_manager.cpp
-
-display_manager.h
-
-display.cpp
-
-display.h
-
-main.cpp
+This does not occur for every title.
 
 ---
 
-## Architecture Review
+# Scope
 
-Current architecture is acceptable.
+Investigation only.
 
-The scrolling implementation is not.
+Do NOT modify code.
 
-Scrolling ownership is split between:
+Determine:
 
-DisplayManager
-
-and
-
-Display
-
-Rendering strategy is inconsistent.
-
----
-
-## Known Issues
-
-### Issue 1
-
-Text wrapping was not explicitly disabled.
-
-Status:
-
-Completed.
+- how scrolling works
+- how scroll distance is calculated
+- how the visible window is calculated
+- why some titles clip while others do not
+- whether this is a character-count issue or pixel-width issue
+- where the reverse point is determined
 
 ---
 
-### Issue 2
+# Stable Components
 
-Scrolling ownership split across two classes.
+These systems are working correctly and should not be modified unless directly related to the current task.
 
-Status:
-
-Deferred.
-
-This is an architectural improvement, not the primary bug.
-
----
-
-### Issue 3
-
-Mixed rendering strategy.
-
-Current code alternates between:
-
-clearDisplay()
-
-partial redraw
-
-full redraw
-
-Likely contributing to rendering corruption.
-
-Status:
-
-Highest Priority.
+- Audio subsystem
+- Recorder
+- Recognition pipeline
+- DisplayManager architecture
+- Display rendering
+- Visualizer
+- Recording flow
+- Button handling
+- Wi-Fi
+- Recognition state machine
 
 ---
 
-### Issue 4
+# Next Planned Phase
 
-Viewport calculated twice.
+Phase 5.7
 
-Status:
+Scrolling polish and text layout improvements.
 
-Pending.
+Future work may include:
 
----
-
-### Issue 5
-
-Possible off-by-one error in viewport calculation.
-
-Status:
-
-Pending.
-
----
-
-## Development Rules
-
-Solve one issue only.
-
-Do not combine fixes.
-
-Do not refactor unrelated code.
-
-Keep commits small.
-
-Test after every issue.
-
----
-
-## Next Task
-
-Investigate and fix the mixed rendering strategy without changing project architecture.
+- smoother scrolling
+- pause before reversing
+- configurable margins
+- better clipping behaviour

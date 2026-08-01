@@ -164,8 +164,34 @@ void DisplayManager::renderVisualizer() {
 
 void DisplayManager::renderSongDetails() {
   int16_t maxScrollDistance = 0;
+
+  // If recognition has finished and the recognizer notified Idle after
+  // reporting a terminal state (e.g. SongFound or SongNotFound), prefer
+  // showing that terminal state so the user sees the results. The
+  // recognizer sends Idle to indicate the cycle completed, but rendering
+  // should still reflect the most recent terminal state.
+  RecognitionState displayState = recognitionState_;
+  if (recognitionState_ == RecognitionState::Idle &&
+      previousRecognitionState_ != RecognitionState::Idle) {
+    // Only map non-transient previous states through; transient states
+    // like Recording/Uploading/Recognizing should not be used for final
+    // result rendering.
+    switch (previousRecognitionState_) {
+    case RecognitionState::SongFound:
+    case RecognitionState::SongNotFound:
+    case RecognitionState::UploadFailed:
+    case RecognitionState::ApiError:
+    case RecognitionState::WiFiError:
+    case RecognitionState::Failed:
+      displayState = previousRecognitionState_;
+      break;
+    default:
+      break;
+    }
+  }
+
   const bool shouldScroll = Display::showSongDetails(
-      recognitionState_, songInfo_, scrollOffset_, maxScrollDistance);
+      displayState, songInfo_, scrollOffset_, maxScrollDistance);
 
   maxScrollDistance_ = maxScrollDistance;
   scrollActive_ = shouldScroll;
