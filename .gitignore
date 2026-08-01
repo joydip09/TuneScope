@@ -26,6 +26,3 @@ compile_commands.json
 *.swo
 
 __pycache__/
-
-AGENTS.md
-CURRENT_TASK.md
