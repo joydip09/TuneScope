@@ -177,33 +177,19 @@ This modular design allows new functionality to be added with minimal impact on 
 
 ## Audio Visualizer
 
-```
-[ GIF Placeholder ]
-```
+![Audio Visualizer](docs/images/visualizer.jpeg)
 
 ---
 
 ## Song Recognition
 
-```
-[ GIF Placeholder ]
-```
+![Song Recognition](docs/images/recording.jpeg)
 
 ---
 
 ## OLED Interface
 
-```
-[ Screenshot Placeholder ]
-```
-
----
-
-## Hardware Prototype
-
-```
-[ Prototype Image Placeholder ]
-```
+![OLED Interface](docs/images/now_playing.jpeg)
 
 ---
 
