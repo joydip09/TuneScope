@@ -547,35 +547,15 @@ Internal pull-up resistors are enabled in software, so no external resistors are
 
 The following media will be added before the public release.
 
-## Prototype
-
-```text
-[ Photo Placeholder ]
-```
-
----
-
 ## Wiring
 
-```text
-[ Wiring Photo Placeholder ]
-```
-
----
-
-## OLED Interface
-
-```text
-[ OLED Close-up Placeholder ]
-```
+![TuneScope Wiring](docs/images/wiring.png)
 
 ---
 
 ## Complete Assembly
 
-```text
-[ Finished Device Placeholder ]
-```
+![TuneScope Assembly](docs/images/complete_assembly.jpeg)
 
 ---
 
