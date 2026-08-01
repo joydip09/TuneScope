@@ -9,7 +9,6 @@
 ![Language](https://img.shields.io/badge/language-C++17-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Issues](https://img.shields.io/github/issues/joydip09/TuneScope)
-![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange)
 
 ---
 
@@ -237,7 +236,7 @@ The remaining work primarily focuses on optimization, documentation, testing, an
 
 ## 1. Clone
 
-git clone ...
+git clone https://github.com/joydip09/TuneScope.git
 
 ## 2. Open
 
@@ -422,7 +421,7 @@ The display system is independent from the recognition pipeline, allowing the in
 
 ---
 
-## MAX98357A Amplifier _(Optional)_
+## MAX98357A Amplifier _(Future Expansion)_
 
 The MAX98357A is currently not required for Version 1.
 
@@ -437,7 +436,7 @@ The firmware architecture already leaves room for future audio output support wi
 
 ---
 
-## Speaker _(Optional)_
+## Speaker _(Future Expansion)_
 
 A small 4Ω 3W speaker may be connected to the MAX98357A in future releases.
 
@@ -2814,8 +2813,9 @@ include/secrets.h
 ```cpp
 #pragma once
 
-constexpr char WIFI_SSID[] = "";
-constexpr char WIFI_PASSWORD[] = "";
+// Wi-Fi Credentials
+#define WIFI_SSID ""
+#define WIFI_PASSWORD ""
 
 constexpr char AUDD_API_TOKEN[] = "";
 ```
