@@ -58,6 +58,7 @@ The core functionality of TuneScope has been implemented. Current work focuses o
 
 - ✅ ESP32-S3 bring-up
 - ✅ OLED initialization
+- ✅ SSD1306 and SH1106 OLED compatibility
 - ✅ INMP441 microphone
 - ✅ Button input
 - ✅ Wi-Fi connectivity
@@ -106,6 +107,7 @@ The core functionality of TuneScope has been implemented. Current work focuses o
 - ✅ Song details
 - ✅ Automatic title scrolling
 - ✅ Display mode switching
+- ✅ Configurable SSD1306/SH1106 controller selection
 
 ---
 
@@ -175,6 +177,10 @@ The following documentation is being completed:
 - CURRENT_TASK.md
 - CONTRIBUTING.md
 - CHANGELOG.md
+
+Display controller selection is documented in `README.md`. Set
+`TUNESCOPE_DISPLAY_SH1106` to `0` for SSD1306 or `1` for SH1106 in
+`include/config.h`.
 
 ---
 

@@ -39,7 +39,7 @@
 
 ## Overview
 
-TuneScope is a standalone embedded music recognition device built around the **ESP32-S3** microcontroller. It continuously monitors nearby audio through an **INMP441 I2S microphone**, visualizes the detected sound on a **128×64 SSD1306 OLED display**, and identifies songs using the **AudD Music Recognition API** over Wi-Fi.
+TuneScope is a standalone embedded music recognition device built around the **ESP32-S3** microcontroller. It continuously monitors nearby audio through an **INMP441 I2S microphone**, visualizes the detected sound on a **128×64 SSD1306 or SH1106 OLED display**, and identifies songs using the **AudD Music Recognition API** over Wi-Fi.
 
 Unlike smartphone applications, TuneScope is designed as a dedicated hardware device that performs audio capture, visualization, network communication, and user interaction entirely on the ESP32-S3.
 
@@ -262,7 +262,7 @@ The hardware was selected to balance cost, performance, and ease of development 
 | ------------------------------------ | --------------------------------- |
 | ESP32-S3 Dev Board (N16R8)           | Main controller                   |
 | INMP441 I2S Microphone               | Audio capture                     |
-| SSD1306 128×64 OLED                  | User interface                    |
+| SSD1306 or SH1106 128×64 OLED       | User interface                    |
 | Push Button                          | User input                        |
 | MAX98357A I2S Amplifier _(optional)_ | Audio output (future expansion)   |
 | 4Ω 3W Speaker _(optional)_           | Audio playback (future expansion) |
@@ -326,9 +326,29 @@ This format is uploaded directly to the recognition service after adding a stand
 
 ---
 
-## SSD1306 OLED Display
+## SSD1306 / SH1106 OLED Display
 
 The OLED serves as the primary user interface.
+
+TuneScope supports both **SSD1306** and **SH1106** controllers. Both use the
+same 128×64 logical layout, so switching controllers preserves the existing
+interface, visualizer, and title scrolling behavior.
+
+### Switching Display Controllers
+
+Open `include/config.h` and change the single display selection option:
+
+```cpp
+// SSD1306
+#define TUNESCOPE_DISPLAY_SH1106 0
+
+// SH1106
+#define TUNESCOPE_DISPLAY_SH1106 1
+```
+
+After changing the value, rebuild and upload the firmware. The default I²C
+address is `0x3C`; change `Config::OLED_ADDRESS` in the same file only if the
+display hardware uses a different address.
 
 Display resolution:
 
@@ -488,7 +508,7 @@ A stable USB power source is recommended during Wi-Fi transmission.
 ## OLED
 
 ```text
-ESP32-S3                 SSD1306
+ESP32-S3                 SSD1306 / SH1106
 ----------------------------------------
 3.3V   ----------------> VCC
 GND    ----------------> GND
@@ -742,7 +762,8 @@ It serves as the graphics foundation for the OLED user interface.
 
 ## Adafruit SSD1306
 
-Handles communication with the SSD1306 OLED display.
+Handles communication with the SSD1306 OLED display when the SSD1306
+configuration is selected.
 
 Responsibilities include:
 
@@ -751,6 +772,12 @@ Responsibilities include:
 - Screen updates
 
 The higher-level user interface is implemented separately in the Display module.
+
+## Adafruit SH110X
+
+Handles communication with SH1106 OLED displays when
+`TUNESCOPE_DISPLAY_SH1106` is set to `1`. Both controller libraries share the
+same Adafruit GFX drawing interface through TuneScope's display driver layer.
 
 ---
 
@@ -1752,7 +1779,7 @@ showAudioLevel()
 ## Dependencies
 
 - Adafruit GFX
-- SSD1306 Library
+- Adafruit SSD1306 or Adafruit SH110X
 - Visualizer
 
 ---
@@ -1886,7 +1913,7 @@ Visualizer::draw()
 ## Dependencies
 
 - Adafruit GFX
-- SSD1306
+- Display driver (SSD1306 or SH1106)
 
 ---
 

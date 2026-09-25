@@ -12,6 +12,9 @@ constexpr uint8_t OLED_WIDTH = 128;
 constexpr uint8_t OLED_HEIGHT = 64;
 constexpr uint8_t OLED_ADDRESS = 0x3C;
 
+// Set to 1 for SH1106, or 0 to use the default SSD1306 controller.
+#define TUNESCOPE_DISPLAY_SH1106 1
+
 // Audio
 constexpr uint32_t SAMPLE_RATE = 16000;
 constexpr uint8_t BITS_PER_SAMPLE = 16;

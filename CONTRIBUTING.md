@@ -70,7 +70,7 @@ Recommended hardware:
 
 - ESP32-S3 (N16R8)
 - INMP441 Microphone
-- SSD1306 OLED
+- SSD1306 or SH1106 128×64 OLED
 
 Some documentation-only contributions do not require hardware.
 
