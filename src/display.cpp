@@ -4,13 +4,12 @@
 #include "pins.h"
 #include "visualizer.h"
 
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include "display_driver.h"
 #include <Wire.h>
 
 namespace {
 
-Adafruit_SSD1306 display(Config::OLED_WIDTH, Config::OLED_HEIGHT, &Wire, -1);
+DisplayDriver display(Config::OLED_WIDTH, Config::OLED_HEIGHT, &Wire, -1);
 bool displayReady = false;
 
 constexpr int16_t kHeaderY = 0;
@@ -36,11 +35,11 @@ bool hasRenderedSongDetails = false;
 void drawHorizontalBar(int x, int y, int width, int height, uint8_t percent) {
   percent = constrain(percent, 0, 100);
 
-  display.drawRect(x, y, width, height, SSD1306_WHITE);
+  display.drawRect(x, y, width, height, DISPLAY_WHITE);
 
   int fillWidth = ((width - 2) * percent) / 100;
 
-  display.fillRect(x + 1, y + 1, fillWidth, height - 2, SSD1306_WHITE);
+  display.fillRect(x + 1, y + 1, fillWidth, height - 2, DISPLAY_WHITE);
 }
 
 void drawCenteredText(const String &text, uint8_t textSize, int16_t y,
@@ -87,11 +86,11 @@ void drawStaticSongLayout(const String &artistText, const String &albumText) {
   display.clearDisplay();
 
   display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
+  display.setTextColor(DISPLAY_WHITE);
   display.setCursor(0, kHeaderY);
   display.println(F("NOW PLAYING"));
 
-  display.drawFastHLine(0, kDividerY, kRowWidth, SSD1306_WHITE);
+  display.drawFastHLine(0, kDividerY, kRowWidth, DISPLAY_WHITE);
 
   display.setTextSize(1);
   display.setCursor(0, kArtistY);
@@ -127,7 +126,7 @@ String getVisibleTitleWindow(const String &titleText, int16_t startIndex,
 }
 
 void drawTitleRegion(const String &titleText, int16_t windowStart) {
-  display.fillRect(0, kTitleY, kRowWidth, kTitleHeight, SSD1306_BLACK);
+  display.fillRect(0, kTitleY, kRowWidth, kTitleHeight, DISPLAY_BLACK);
 
   if (titleText.length() == 0) {
     return;
@@ -135,7 +134,7 @@ void drawTitleRegion(const String &titleText, int16_t windowStart) {
 
   display.setTextWrap(false);
   display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
+  display.setTextColor(DISPLAY_WHITE);
   display.setCursor(0, kTitleY);
 
   const int16_t titleWidth =
@@ -165,12 +164,12 @@ bool Display::begin() {
 
   Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, Config::OLED_ADDRESS)) {
+  if (!display.begin(Config::OLED_ADDRESS)) {
     return false;
   }
 
   display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
+  display.setTextColor(DISPLAY_WHITE);
   display.display();
   displayReady = true;
 
@@ -188,9 +187,9 @@ void Display::showSplash() {
 
   display.clearDisplay();
 
-  drawCenteredText("TuneScope", 2, 20, SSD1306_WHITE);
-  drawCenteredText("Ready", 1, 40, SSD1306_WHITE);
-  drawCenteredText("Press REC", 1, 52, SSD1306_WHITE);
+  drawCenteredText("TuneScope", 2, 20, DISPLAY_WHITE);
+  drawCenteredText("Ready", 1, 40, DISPLAY_WHITE);
+  drawCenteredText("Press REC", 1, 52, DISPLAY_WHITE);
 
   display.display();
 }
@@ -259,41 +258,41 @@ bool Display::showSongDetails(RecognitionState state, const SongInfo &songInfo,
       return shouldScroll;
     }
 
-    drawCenteredText("Song Not Found", 1, 24, SSD1306_WHITE);
+    drawCenteredText("Song Not Found", 1, 24, DISPLAY_WHITE);
     break;
 
   case RecognitionState::SongNotFound:
-    drawCenteredText("Song Not Found", 1, 24, SSD1306_WHITE);
+    drawCenteredText("Song Not Found", 1, 24, DISPLAY_WHITE);
     break;
 
   case RecognitionState::WiFiError:
-    drawCenteredText("Wi-Fi Error", 1, 20, SSD1306_WHITE);
-    drawCenteredText("Reconnect Wi-Fi", 1, 40, SSD1306_WHITE);
+    drawCenteredText("Wi-Fi Error", 1, 20, DISPLAY_WHITE);
+    drawCenteredText("Reconnect Wi-Fi", 1, 40, DISPLAY_WHITE);
     break;
 
   case RecognitionState::UploadFailed:
-    drawCenteredText("Upload Failed", 1, 24, SSD1306_WHITE);
+    drawCenteredText("Upload Failed", 1, 24, DISPLAY_WHITE);
     break;
 
   case RecognitionState::ApiError:
-    drawCenteredText("API Error", 1, 24, SSD1306_WHITE);
+    drawCenteredText("API Error", 1, 24, DISPLAY_WHITE);
     break;
 
   case RecognitionState::Failed:
-    drawCenteredText("Recognition Failed", 1, 24, SSD1306_WHITE);
+    drawCenteredText("Recognition Failed", 1, 24, DISPLAY_WHITE);
     break;
 
   case RecognitionState::Idle:
-    drawCenteredText("No Song", 1, 20, SSD1306_WHITE);
-    drawCenteredText("Press REC", 1, 40, SSD1306_WHITE);
+    drawCenteredText("No Song", 1, 20, DISPLAY_WHITE);
+    drawCenteredText("Press REC", 1, 40, DISPLAY_WHITE);
     break;
 
   case RecognitionState::Recording:
   case RecognitionState::Uploading:
   case RecognitionState::Recognizing:
   default:
-    drawCenteredText("Recording...", 1, 20, SSD1306_WHITE);
-    drawCenteredText("Please wait", 1, 40, SSD1306_WHITE);
+    drawCenteredText("Recording...", 1, 20, DISPLAY_WHITE);
+    drawCenteredText("Please wait", 1, 40, DISPLAY_WHITE);
     break;
   }
 
@@ -316,7 +315,7 @@ void Display::showVisualizer(uint16_t rms) {
   const float normalizedAmplitude = normalizeAmplitude(rms);
 
   display.fillRect(0, 0, Config::OLED_WIDTH, Config::OLED_HEIGHT,
-                   SSD1306_BLACK);
+                   DISPLAY_BLACK);
   Visualizer::draw(display, normalizedAmplitude);
   display.display();
 }

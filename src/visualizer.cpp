@@ -1,13 +1,11 @@
 #include "visualizer.h"
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
 float Visualizer::smoothedAmplitude_ = 0.0f;
 
 const float Visualizer::kProfileMultiplier[kBarsPerSide] = {
     0.20f, 0.35f, 0.55f, 0.75f, 0.95f, 0.75f, 0.55f, 0.35f};
 
-void Visualizer::draw(Adafruit_SSD1306 &display, float normalizedAmplitude) {
+void Visualizer::draw(DisplayDriver &display, float normalizedAmplitude) {
   smoothedAmplitude_ = smoothedAmplitude_ * (1.0f - kSmoothingFactor) +
                        normalizedAmplitude * kSmoothingFactor;
 
@@ -22,7 +20,7 @@ void Visualizer::draw(Adafruit_SSD1306 &display, float normalizedAmplitude) {
   drawWaveform(display, amplitude);
 }
 
-void Visualizer::drawBaselineDots(Adafruit_SSD1306 &display) {
+void Visualizer::drawBaselineDots(DisplayDriver &display) {
   constexpr int16_t dotCount = 12;
   constexpr int16_t dotStep = 8;
   constexpr int16_t dotRadius = 1;
@@ -34,11 +32,11 @@ void Visualizer::drawBaselineDots(Adafruit_SSD1306 &display) {
     const int16_t x = startX + index * dotStep;
     const int16_t y = centerY + ((index % 2 == 0) ? -1 : 1) *
                                     ((phase < (dotStep / 2)) ? 1 : -1);
-    display.drawPixel(x, y, SSD1306_WHITE);
+    display.drawPixel(x, y, DISPLAY_WHITE);
   }
 }
 
-void Visualizer::drawWaveform(Adafruit_SSD1306 &display, float amplitude) {
+void Visualizer::drawWaveform(DisplayDriver &display, float amplitude) {
   const int16_t totalBars = kBarsPerSide * 2;
 
   // Compute dynamic gap so bars span nearly the full display width with a
@@ -68,7 +66,7 @@ void Visualizer::drawWaveform(Adafruit_SSD1306 &display, float amplitude) {
       const int16_t x = startX + barIndex * (kBarWidth + gap);
       const int16_t y = kCenterY - (relativeHeight / 2);
 
-      display.fillRoundRect(x, y, kBarWidth, relativeHeight, 1, SSD1306_WHITE);
+      display.fillRoundRect(x, y, kBarWidth, relativeHeight, 1, DISPLAY_WHITE);
     }
   }
 }

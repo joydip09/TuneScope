@@ -10,11 +10,13 @@ The format is based on **Keep a Changelog** and follows **Semantic Versioning**.
 
 ## Added
 
-- Placeholder for future features.
+- SH1106 OLED display support alongside the existing SSD1306 support.
+- Centralized display-controller selection through `TUNESCOPE_DISPLAY_SH1106`.
 
 ## Changed
 
-- Ongoing firmware optimization.
+- OLED rendering now uses a common display-driver layer for SSD1306 and SH1106
+	controllers while preserving the existing 128×64 UI.
 
 ## Fixed
 

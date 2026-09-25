@@ -1,11 +1,12 @@
 #pragma once
 
-#include <Adafruit_SSD1306.h>
 #include <Arduino.h>
+
+#include "display_driver.h"
 
 class Visualizer {
 public:
-  static void draw(Adafruit_SSD1306 &display, float normalizedAmplitude);
+  static void draw(DisplayDriver &display, float normalizedAmplitude);
 
 private:
   static constexpr int16_t kDisplayWidth = 128;
@@ -23,6 +24,6 @@ private:
 
   static float smoothedAmplitude_;
 
-  static void drawBaselineDots(Adafruit_SSD1306 &display);
-  static void drawWaveform(Adafruit_SSD1306 &display, float amplitude);
+  static void drawBaselineDots(DisplayDriver &display);
+  static void drawWaveform(DisplayDriver &display, float amplitude);
 };

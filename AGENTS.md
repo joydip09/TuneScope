@@ -16,7 +16,7 @@ TuneScope is a standalone ESP32-S3 music recognition device that:
 - Generates a WAV file in PSRAM
 - Uploads the recording to the AudD Music Recognition API
 - Parses the returned JSON response
-- Displays song information on an SSD1306 OLED
+- Displays song information on an SSD1306 or SH1106 OLED
 - Provides a real-time audio visualizer
 - Uses a modular firmware architecture
 
