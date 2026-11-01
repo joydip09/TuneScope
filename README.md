@@ -2702,7 +2702,7 @@ The visualizer applies normalization, smoothing, and center-weighted scaling bef
 ## Clone Repository
 
 ```bash
-git clone https://github.com/<username>/TuneScope.git
+git clone https://github.com/joydip09/TuneScope.git
 
 cd TuneScope
 ```
